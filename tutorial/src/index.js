@@ -13,29 +13,23 @@ function Square(props) {
 class Board extends React.Component {
   renderSquare(i) {
     return <Square
+      key={i}
       value={this.props.squares[i]}
       onClick={() => this.props.onClick(i)}
     />;
   }
 
+  renderRow(row, index) {
+    return <div key={index} className="board-row">
+      {row.map(this.renderSquare.bind(this))}
+    </div>
+  }
+
   render() {
+    const tiles = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
     return (
       <div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
+        {tiles.map(this.renderRow.bind(this))}
       </div>
     );
   }
@@ -46,7 +40,9 @@ class Game extends React.Component {
     super();
     this.state = {
       history: [
-        {squares: Array(9).fill(null)}
+        {
+          squares: Array(9).fill(null)
+        }
       ],
       stepNumber: 0,
       xIsNext: true
@@ -60,10 +56,15 @@ class Game extends React.Component {
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
+    const action = {
+      x: Math.floor(i / 3),
+      y: i % 3
+    };
     squares[i] = this.state.xIsNext ? 'X' : 'O';
     this.setState({
       history: history.concat([{
-        squares
+        squares,
+        action
       }]),
       stepNumber: history.length,
       xIsNext: !this.state.xIsNext
@@ -86,11 +87,14 @@ class Game extends React.Component {
       'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     const moves = history.map((step, move) => {
       const desc = move ?
-        'Move #' + move :
+        'Move #(' + step.action.x + ',' + step.action.y + ')' :
         'Game start';
+      const highlight = this.state.stepNumber === move;
       return (
         <li key={move}>
-          <a href="#" onClick={() => this.jumpTo(move)}>{desc}</a>
+          <a className={highlight ? 'highlight' : ''} href={"#" + move} onClick={() => this.jumpTo(move)}>
+            {desc}
+          </a>
         </li>
       );
     });
