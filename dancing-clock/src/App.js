@@ -10,11 +10,15 @@ const DAY = 86400000;
 const HOUR = 3600000;
 const MINUTE = 60000;
 
-// TODO: parse the due date from the control panel
-const due = new Date();
-due.setHours(21);
-due.setMinutes(30);
-due.setSeconds(59);
+const due = setDueTodayByTime(21, 30);
+
+function setDueTodayByTime(hour, minute) {
+  const due = new Date();
+  due.setHours(hour);
+  due.setMinutes(minute);
+  due.setSeconds(59);
+  return due;
+}
 
 class ReminderStorage {
   constructor(storage, name) {
@@ -50,12 +54,14 @@ class ClockApp extends Component {
       date: now,
       minuteDiff: getMinuteDifference(props.due, now),
       title: props.title,
-      due: props.due
+      due: props.due,
+      hideControl: true
     };
     this.reminderStorage = new ReminderStorage(window.sessionStorage, props.title);
 
     this.handleTitleChange = this.handleTitleChange.bind(this);
     this.handleDueChange = this.handleDueChange.bind(this);
+    this.handleKeybinds = this.handleKeybinds.bind(this);
   }
 
   toggleDance(toggle) {
@@ -75,10 +81,18 @@ class ClockApp extends Component {
       () => this.tick(),
       1000
     );
+    document.addEventListener('keydown', this.handleKeybinds);
   }
 
   componentWillUnmount() {
     clearInterval(this.timerID);
+    document.removeEventListener('keydown', this.handleKeybinds);
+  }
+
+  handleKeybinds(event) {
+    if (event.keyCode === 83) { // s for settings
+      this.setState({hideControl: !this.state.hideControl});
+    }
   }
 
   tick() {
@@ -132,7 +146,9 @@ class ClockApp extends Component {
   }
 
   handleDueChange(event) {
-    // TODO: parse the string format of time to time value
+    const [hour, minute] = event.target.value.split(':');
+    const due = setDueTodayByTime(hour, minute);
+    this.setState({due});
   }
 
   getWarningClass() {
@@ -142,6 +158,10 @@ class ClockApp extends Component {
         return this.props.reminderClasses[i];
       }
     }
+  }
+
+  getControlFormClasses() {
+    return this.state.hideControl ? 'hidden' : '';
   }
 
   render() {
@@ -159,12 +179,12 @@ class ClockApp extends Component {
           Due: {this.state.due.toLocaleTimeString()} -
           <span className={this.getWarningClass()}> {this.getFormattedDifferenceInMinutes()}</span>
         </p>
-        <div className="hidden control-form">
+        <div className={[this.getControlFormClasses(), 'control-form'].join(' ')}>
           <label htmlFor="title">Title: </label>
           <input id="title" type="text" value={this.state.title} onChange={this.handleTitleChange}/>
 
           <label htmlFor="due">Due: </label>
-          <input id="due" type="text" value={this.getDueInHoursMinutes()} onChange={this.handleDueChange} />
+          <input id="due" type="time" value={this.getDueInHoursMinutes()} onChange={this.handleDueChange} />
         </div>
       </div>
     );
